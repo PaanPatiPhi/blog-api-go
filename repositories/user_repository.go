@@ -1,4 +1,4 @@
-package repository
+package repositories
 
 import (
 	"blog-api-go/database"
@@ -12,3 +12,4 @@ func GetUserByID(id uuid.UUID) (*models.User, error) {
 	result := database.DB.First(&user, "id = ?", id)
 	return &user, result.Error
 }
+

@@ -5,11 +5,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
+var RawDB *sqlx.DB
 
 func Connect() {
 	dsn := fmt.Sprintf(
@@ -28,5 +30,12 @@ func Connect() {
 	}
 
 	DB = db
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Fatal("Failed to get database instance:", err)
+	}
+
+	RawDB = sqlx.NewDb(sqlDB, "pgx")
 	log.Println("Database connected successfully")
 }

@@ -3,7 +3,7 @@ package handlers
 import (
 	"blog-api-go/database"
 	"blog-api-go/models"
-	"blog-api-go/repository"
+	"blog-api-go/repositories"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -22,7 +22,7 @@ func GetMe(c *fiber.Ctx) error {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
     }
 
-    user, err := repository.GetUserByID(userID)
+    user, err := repositories.GetUserByID(userID)
     if err != nil {
         return c.Status(404).JSON(fiber.Map{"error": "user not found"})
     }

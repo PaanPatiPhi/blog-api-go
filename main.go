@@ -5,6 +5,7 @@ import (
 
 	"blog-api-go/database"
 	"blog-api-go/handlers"
+	"blog-api-go/routes"
 
 	// "blog-api-go/models"
 
@@ -25,6 +26,7 @@ func main() {
 	api := app.Group("/api")
 
 	api.Get("/users", handlers.GetUsers)
+	routes.SetupPostRoutes(app)
 
 	log.Fatal(app.Listen(":4003"))
 }
