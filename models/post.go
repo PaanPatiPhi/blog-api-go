@@ -21,3 +21,12 @@ type PostResponse struct {
 	Posts       []Post `json:"posts"`
 	NextPage    *int   `json:"nextPage"`
 }
+
+type CreatePostRequest struct{
+	Title string `json:"title" validate:"required"`
+	Description *string `json:"description"`
+	Content string `json:"content" validate:"required"`
+	CategoryId uint `json:"category_id" validate:"required"`
+	StatusId uint `json:"status_id" validate:"required"`
+	Image string `json:"image"`
+}

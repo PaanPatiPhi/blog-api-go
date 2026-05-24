@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -23,10 +24,20 @@ func main() {
 	// database.DB.AutoMigrate(&models.User{})
 
 	app := fiber.New()
-	api := app.Group("/api")
+	api := app.Group("/")
+
+app.Use(cors.New(cors.Config{
+    AllowOrigins: "http://localhost:5173",
+    AllowHeaders: "Origin, Content-Type, Accept, Authorization", // ← เพิ่ม Authorization
+    AllowMethods: "GET, POST, PUT, DELETE",
+}))
+
+	routes.SetupPostRoutes(app)
+	routes.SetupCategoryRoutes(app)
 
 	api.Get("/users", handlers.GetUsers)
-	routes.SetupPostRoutes(app)
 
-	log.Fatal(app.Listen(":4003"))
+
+
+	log.Fatal(app.Listen(":4002"))
 }
