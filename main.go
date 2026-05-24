@@ -34,6 +34,7 @@ app.Use(cors.New(cors.Config{
 
 	routes.SetupPostRoutes(app)
 	routes.SetupCategoryRoutes(app)
+	routes.SetupCommentRoutes(app)
 
 	api.Get("/users", handlers.GetUsers)
 

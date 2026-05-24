@@ -3,6 +3,7 @@ package repositories
 import (
 	"blog-api-go/database"
 	"blog-api-go/models"
+	"database/sql"
 	"fmt"
 )
 func CountPosts(category, search string) (int, error) {
@@ -80,3 +81,16 @@ func UpdatePost(id int, post models.CreatePostRequest) error {
 	_, err := database.RawDB.Exec(`UPDATE posts SET title = $1, description = $2, content = $3, category_id = $4, status_id = $5, image = $6 WHERE id = $7`, post.Title, post.Description, post.Content, post.CategoryId, post.StatusId, post.Image, id)
 	return err
 }
+
+func CheckPostExists(postID int) (bool, error) {
+    var id int
+    err := database.RawDB.Get(&id, "SELECT id FROM posts WHERE id = $1", postID)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return false, nil  // ไม่เจอ post
+        }
+        return false, err  // error จริง
+    }
+    return true, nil  // เจอ post
+}
+	
