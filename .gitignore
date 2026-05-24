@@ -1,1 +1,19 @@
+# Environment variables
 .env
+
+# macOS
+.DS_Store
+
+# Build output
+/bin
+/dist
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
