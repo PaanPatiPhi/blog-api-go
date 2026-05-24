@@ -39,15 +39,18 @@ func getJWKS() (map[string]interface{}, error) {
     return jwks, nil
 }
 
-func AdminOnly(c *fiber.Ctx) error {
+
+// แค่ verify token และ set userID — ใช้กับ route ทั่วไป
+func AuthRequired(c *fiber.Ctx) error {
     authHeader := c.Get("Authorization")
     if !strings.HasPrefix(authHeader, "Bearer ") {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
     }
     tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-        if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
-            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+
+    token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+        if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
+            return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
         }
         jwks, err := getJWKS()
         if err != nil{
@@ -59,25 +62,32 @@ func AdminOnly(c *fiber.Ctx) error {
         var ecKey jose.JSONWebKey
         json.Unmarshal(keyData, &ecKey)
         return ecKey.Key, nil
-
     })
     if err != nil || !token.Valid {
-        return c.Status(401).JSON(fiber.Map{"error": "invalid token", "details": err.Error()})
+        return c.Status(401).JSON(fiber.Map{"error": "invalid token"})
     }
 
     claims := token.Claims.(jwt.MapClaims)
     userID := claims["sub"].(string)
-    
+    c.Locals("userID", userID)
+    return c.Next()
+}
+
+// verify token + เช็คว่าเป็น admin — ใช้กับ admin routes
+func AdminOnly(c *fiber.Ctx) error {
+    if err := AuthRequired(c); err != nil {
+        return err
+    }
+    userID := c.Locals("userID").(string)
+
     var role string
-    err = database.RawDB.Get(&role, "SELECT role FROM users WHERE id = $1", userID)
+    err := database.RawDB.Get(&role, "SELECT role FROM users WHERE id = $1", userID)
     if err != nil {
-        return c.Status(401).JSON(fiber.Map{"error": "invalid token, cannot get role", "details": err.Error()})
+        return c.Status(404).JSON(fiber.Map{"error": "user not found"})
     }
     if role != "admin" {
         return c.Status(403).JSON(fiber.Map{"error": "forbidden"})
     }
-    
-    c.Locals("userID", userID)
     c.Locals("role", role)
     return c.Next()
 }
