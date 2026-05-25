@@ -32,7 +32,6 @@ func getJWKS() (map[string]interface{}, error) {
     defer resp.Body.Close()
     body, _ := io.ReadAll(resp.Body)
 
-     log.Println("JWKS response:", string(body)) 
 
     var jwks map[string]interface{}
     json.Unmarshal(body, &jwks)
@@ -43,7 +42,9 @@ func getJWKS() (map[string]interface{}, error) {
 // แค่ verify token และ set userID — ใช้กับ route ทั่วไป
 func AuthRequired(c *fiber.Ctx) error {
     authHeader := c.Get("Authorization")
+
     if !strings.HasPrefix(authHeader, "Bearer ") {
+
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
     }
     tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -63,7 +64,10 @@ func AuthRequired(c *fiber.Ctx) error {
         json.Unmarshal(keyData, &ecKey)
         return ecKey.Key, nil
     })
+
+
     if err != nil || !token.Valid {
+
         return c.Status(401).JSON(fiber.Map{"error": "invalid token"})
     }
 
@@ -75,19 +79,51 @@ func AuthRequired(c *fiber.Ctx) error {
 
 // verify token + เช็คว่าเป็น admin — ใช้กับ admin routes
 func AdminOnly(c *fiber.Ctx) error {
-    if err := AuthRequired(c); err != nil {
-        return err
+    authHeader := c.Get("Authorization")
+    if !strings.HasPrefix(authHeader, "Bearer ") {
+        return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
     }
-    userID := c.Locals("userID").(string)
+    tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+    // parse โดยดึง public key จาก Supabase JWKS
+    token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+        if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
+            return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+        }
+
+        // ดึง JWKS จาก Supabase
+        jwks, err := getJWKS()
+        if err != nil {
+            return nil, err
+        }
+
+        // parse public key จาก JWKS
+        keys := jwks["keys"].([]interface{})
+        keyData, _ := json.Marshal(keys[0])
+
+        var ecKey jose.JSONWebKey
+        json.Unmarshal(keyData, &ecKey)
+        return ecKey.Key, nil
+    })
+
+    if err != nil || !token.Valid {
+        return c.Status(401).JSON(fiber.Map{"error": "invalid token", "details": err.Error()})
+    }
+
+    claims := token.Claims.(jwt.MapClaims)
+    userID := claims["sub"].(string)
 
     var role string
-    err := database.RawDB.Get(&role, "SELECT role FROM users WHERE id = $1", userID)
+    err = database.RawDB.Get(&role, "SELECT role FROM users WHERE id = $1", userID)
     if err != nil {
         return c.Status(404).JSON(fiber.Map{"error": "user not found"})
     }
+
     if role != "admin" {
         return c.Status(403).JSON(fiber.Map{"error": "forbidden"})
     }
+
+    c.Locals("userID", userID)
     c.Locals("role", role)
     return c.Next()
 }

@@ -18,6 +18,17 @@ func CountPosts(category, search string) (int, error) {
 	AND ($2 = '' OR posts.title ILIKE '%' || $2 || '%')`, category, search)
 	return count, err
 }
+func CountAllPosts(category, search string) (int, error) {
+    var count int
+    err := database.RawDB.Get(&count, `
+        SELECT COUNT(*) 
+        FROM posts
+        JOIN categories ON posts.category_id = categories.id
+        WHERE ($1 = '' OR categories.name = $1)
+        AND ($2 = '' OR posts.title ILIKE '%' || $2 || '%')
+    `, category, search)
+    return count, err
+}
 
 func GetPublishedPosts(category, search string, limit, offset int) ([]models.Post, error) {
 	var posts []models.Post

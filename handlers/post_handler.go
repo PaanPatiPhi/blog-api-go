@@ -5,8 +5,8 @@ import (
 	"blog-api-go/repositories"
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 )
 
 func GetPublishedPosts(c *fiber.Ctx) error {
@@ -59,7 +59,7 @@ func GetAllPosts(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "failed to get posts: " + err.Error()})
 	}
-	total, err := repositories.CountPosts(category, search)
+	total, err := repositories.CountAllPosts(category, search)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "failed to get total posts: " + err.Error()})
 	}
